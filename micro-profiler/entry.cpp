@@ -28,6 +28,7 @@
 #include <atlbase.h>
 #include <process.h>
 #include <vector>
+#include <algorithm>
 
 namespace std
 {
@@ -76,6 +77,12 @@ namespace micro_profiler
 	namespace
 	{
 		const __int64 c_ticks_resolution(timestamp_precision());
+		FunctionStatistics fs2FS(const pair<void *, function_statistics> &s)
+		{
+			FunctionStatistics result = { reinterpret_cast<hyper>(s.first) - 5, s.second.times_called, s.second.max_reentrance, s.second.exclusive_time, s.second.inclusive_time };
+
+			return result;
+		}
 	}
 
 	void __declspec(dllexport) create_local_frontend(IProfilerFrontend **frontend)

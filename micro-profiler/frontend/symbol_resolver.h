@@ -20,22 +20,31 @@
 
 #pragma once
 
+#include "./../primitives.h"
+
 #include <atlbase.h>
 #include <string>
 #include <tchar.h>
 
 struct IDiaSession;
 struct IDiaDataSource;
-typedef std::basic_string<TCHAR> tstring;
 
-class symbol_resolver
+namespace micro_profiler
 {
-	CComPtr<IDiaDataSource> _data_source;
-	CComPtr<IDiaSession> _session;
+	typedef std::basic_string<TCHAR> tstring;
 
-public:
-	symbol_resolver(const tstring &image_path, unsigned __int64 load_address);
-	~symbol_resolver();
+	class symbol_resolver
+	{
+		typedef stdext::hash_map<const void *, tstring, address_compare> names_cache;
 
-	tstring symbol_name_by_va(unsigned __int64 address) const;
-};
+		CComPtr<IDiaDataSource> _data_source;
+		CComPtr<IDiaSession> _session;
+		mutable names_cache _cached_names;
+
+	public:
+		symbol_resolver(const tstring &image_path, unsigned __int64 load_address);
+		~symbol_resolver();
+
+		tstring symbol_name_by_va(const void *address) const;
+	};
+}

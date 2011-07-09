@@ -29,42 +29,48 @@
 #include <vector>
 #include <memory>
 
-class symbol_resolver;
-
-typedef std::basic_string<TCHAR> tstring;
-
-struct function_statistics_ex : micro_profiler::function_statistics
+namespace micro_profiler
 {
-	function_statistics_ex(const FunctionStatistics &from, const symbol_resolver &resolver);
+	class symbol_resolver;
 
-	tstring name;
-};
+	class statistics
+	{
+		class dereferencing_wrapper;
+		class children_dereferencing_wrapper;
 
-class statistics
-{
-	typedef stdext::hash_map<__int64, function_statistics_ex> statistics_map_;
-	class dereferencing_wrapper;
+		const symbol_resolver &_symbol_resolver;
+		std::auto_ptr<dereferencing_wrapper> _predicate;
+		std::auto_ptr<children_dereferencing_wrapper> _children_predicate;
+		detailed_statistics_map _statistics;
+		const statistics_map *_children_statistics;
+		std::vector<detailed_statistics_map::const_iterator> _sorted_statistics;
+		std::vector<statistics_map::const_iterator> _sorted_children_statistics;
 
-	const symbol_resolver &_symbol_resolver;
-	std::auto_ptr<dereferencing_wrapper> _predicate;
-	statistics_map_ _statistics;
-	std::vector<statistics_map_::const_iterator> _sorted_statistics;
+		statistics(const statistics &);
+		void operator =(const statistics &);
 
-	statistics(const statistics &);
-	void operator =(const statistics &);
+	public:
+		typedef statistics_map::value_type statistics_entry;
+		typedef detailed_statistics_map::value_type statistics_entry_detailed;
+		typedef bool (*sort_predicate)(const void *lhs_addr, const function_statistics &lhs, const void *rhs_addr, const function_statistics &rhs, const symbol_resolver &resolver);
 
-public:
-	typedef statistics_map_ statistics_map;
-	typedef bool (*sort_predicate)(const function_statistics_ex &lhs, const function_statistics_ex &rhs);
+	public:
+		statistics(const symbol_resolver &resolver);
+		virtual ~statistics();
 
-public:
-	statistics(const symbol_resolver &resolver);
-	virtual ~statistics();
+		void sort(sort_predicate predicate, bool ascending);
+		const statistics_entry_detailed &at(size_t index) const;
+		size_t size() const;
 
-	const function_statistics_ex &at(size_t index) const;
-	size_t size() const;
+		size_t find_index(const void *address) const;
 
-	void clear();
-	void sort(sort_predicate predicate, bool ascending);
-	bool update(const FunctionStatisticsDetailed *data, unsigned int count);
-};
+		void set_focus(size_t index);
+		void remove_focus();
+		void sort_children(sort_predicate predicate, bool ascending);
+		const statistics_entry &at_children(size_t index) const;
+		size_t size_children() const;
+
+		void clear();
+		bool update(const FunctionStatisticsDetailed *data, unsigned int count);
+	};
+}
